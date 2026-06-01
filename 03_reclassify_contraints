@@ -1,0 +1,51 @@
+import arcpy
+from arcpy.sa import *
+
+# 1. Setup
+arcpy.CheckOutExtension("Spatial")
+arcpy.env.workspace = r"D:\2026\Baraga\Baraga.gdb"
+arcpy.env.overwriteOutput = True
+
+# Set the extent to your Slope layer so all outputs are the same size
+arcpy.env.extent = "Cnty_Boundary" 
+arcpy.env.snapRaster = "dem"
+
+try:
+    # --- A. SLOPE (Continuous Data) ---
+    # 0-5%: 1 (Best), 5-15%: 5, 15-20%: 7, >20%: 10 (Avoid)
+    print("Reclassifying Slope...")
+    remap_slope = RemapRange([[0, 5, 1], [5, 15, 5], [15, 20, 7], [20, 999, 10]])
+    out_slope = Reclassify("Slope", "VALUE", remap_slope)
+    out_slope.save("Reclass_Slope")
+
+    # --- B. WATER BODIES (Constraint) ---
+    #turn the water (any value) into 50, and the empty space (NoData) into 1
+    print("Reclassifying Water...")
+    # Using a broad range to catch that 1.6 million value
+    remap_water = RemapValue([[1, 2000000, 50], ["NODATA", 1]])
+    out_water = Reclassify("Water_Raster", "VALUE", remap_water)
+    out_water.save("Reclass_Water")
+
+    # --- C. LANSE RESERVATION (High Cost) ---
+    # Reservation area = 10, everything else = 1
+    print("Reclassifying Reservation...")
+    remap_lanse = RemapValue([[1, 10], ["NODATA", 1]])
+    out_lanse = Reclassify("LAnse_Reservation_ras", "VALUE", remap_lanse)
+    out_lanse.save("Reclass_LAnse")
+
+    # --- D. PREFERRED HIGHWAYS (The "Target") ---
+    # Roads = 1 (Follow these), Everywhere else = 5 (Neutral cost)
+    print("Reclassifying Highways...")
+    # Based on your image, you had multiple road values (2-7). 
+    # We map all of them to 1.
+    remap_roads = RemapValue([[1, 10, 1], ["NODATA", 5]])
+    out_roads = Reclassify("Preferred_Highways_Ras", "VALUE", remap_roads)
+    out_roads.save("Reclass_Roads")
+
+    print("Success! All layers are now scored 1-50 and ready for overlay.")
+
+except Exception as e:
+    print(f"Error: {e}")
+
+finally:
+    arcpy.CheckInExtension("Spatial")
