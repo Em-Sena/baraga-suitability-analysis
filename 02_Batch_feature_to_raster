@@ -1,0 +1,27 @@
+import arcpy
+import os
+
+# 1. Setup
+arcpy.env.workspace = r"D:\2026\Baraga\Baraga.gdb"
+output_folder = r"D:\2026\Baraga\Baraga.gdb"
+cell_size = 10  # 10 meters is the "Sweet Spot" for these features
+
+# List of your specific layers
+layers = ["Preferred_Highways", "LAnse_Reservation", "Waterbodies"]
+
+# 2. Loop and Convert
+for layer in layers:
+    out_name = os.path.join(output_folder, f"{layer}_ras")
+    
+    # We use 'OBJECTID' to give each feature a unique value in the raster
+    # Or use a specific field like 'Road_Type' or 'Water_Code'
+    val_field = "OBJECTID" 
+    
+    print(f"Processing {layer}...")
+    try:
+        arcpy.conversion.FeatureToRaster(layer, val_field, out_name, cell_size)
+        print(f"Created: {out_name}")
+    except Exception as e:
+        print(f"Could not convert {layer}: {e}")
+
+print("Batch Rasterization Complete.")
