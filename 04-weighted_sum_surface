@@ -1,0 +1,34 @@
+import arcpy
+from arcpy.sa import *
+
+# 1. Setup
+arcpy.CheckOutExtension("Spatial")
+arcpy.env.workspace = r"D:\2026\Baraga\Baraga.gdb"
+arcpy.env.overwriteOutput = True
+
+try:
+    # Load the reclassified rasters
+    # Ensure these names match exactly what is in your Contents pane
+    slope = Raster("out_slope")
+    roads = Raster("out_roads")
+    lanse = Raster("out_lanse")
+    water = Raster("out_water")
+
+    # 2. Apply Weights
+    # Formula: (Slope * 1) + (Roads * 2) + (Water * 3) + (LAnse * 4)
+    print("Calculating Weighted Sum...")
+    
+    final_score = (slope * 1) + (roads * 2) + (water * 3) + (lanse * 4)
+
+    # 3. Save Output
+    final_score.save("Weighted_Suitability_Final")
+    
+    print("Success! The Weighted Suitability Map has been created.")
+    print("Lower values = Highly Suitable | Higher values = Avoid")
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+
+finally:
+    arcpy.CheckInExtension("Spatial")
+
